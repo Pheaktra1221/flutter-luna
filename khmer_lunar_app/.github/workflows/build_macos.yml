@@ -1,0 +1,93 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:   # allows manual trigger from GitHub website
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Install Flutter ───────────────────────────────────────────────────
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.2'
+          channel: stable
+          cache: true
+
+      # ── 3. Install dependencies ──────────────────────────────────────────────
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # ── 4. Build macOS release ───────────────────────────────────────────────
+      - name: Build macOS
+        run: flutter build macos --release
+
+      # ── 5. Ad-hoc code sign ──────────────────────────────────────────────────
+      - name: Code sign (ad-hoc)
+        run: |
+          codesign --force --deep --sign "-" \
+            "build/macos/Build/Products/Release/khmer_lunar_app.app"
+
+      # ── 6. Install create-dmg ────────────────────────────────────────────────
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      # ── 7. Create DMG installer ──────────────────────────────────────────────
+      - name: Create DMG
+        run: |
+          mkdir -p dist/macos
+          create-dmg \
+            --volname "Khmer Lunar Calendar" \
+            --window-pos 200 120 \
+            --window-size 560 380 \
+            --icon-size 100 \
+            --icon "khmer_lunar_app.app" 140 190 \
+            --hide-extension "khmer_lunar_app.app" \
+            --app-drop-link 420 190 \
+            "dist/macos/KhmerLunarCalendar-1.0.0.dmg" \
+            "build/macos/Build/Products/Release/khmer_lunar_app.app" \
+          || \
+          hdiutil create \
+            -volname "Khmer Lunar Calendar" \
+            -srcfolder "build/macos/Build/Products/Release/khmer_lunar_app.app" \
+            -ov -format UDZO \
+            "dist/macos/KhmerLunarCalendar-1.0.0.dmg"
+
+      # ── 8. Upload DMG as artifact ────────────────────────────────────────────
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhmerLunarCalendar-macOS
+          path: dist/macos/KhmerLunarCalendar-1.0.0.dmg
+          retention-days: 30
+
+      # ── 9. Create GitHub Release (on push to main/master) ───────────────────
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-macos-${{ github.run_number }}
+          name: "Khmer Lunar Calendar v1.0.0 (macOS)"
+          body: |
+            ## ប្រតិទិនចន្ទគតិខ្មែរ – macOS Build
+
+            ### Install:
+            1. Download `KhmerLunarCalendar-1.0.0.dmg`
+            2. Double-click to mount
+            3. Drag app → Applications
+            4. First launch: right-click → Open
+
+            Built automatically from commit ${{ github.sha }}
+          files: dist/macos/KhmerLunarCalendar-1.0.0.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
