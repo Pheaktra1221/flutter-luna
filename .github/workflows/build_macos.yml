@@ -1,0 +1,64 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.2'
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: khmer_lunar_app
+        run: flutter pub get
+
+      - name: Build macOS
+        working-directory: khmer_lunar_app
+        run: flutter build macos --release
+
+      - name: Code sign (ad-hoc)
+        working-directory: khmer_lunar_app
+        run: |
+          codesign --force --deep --sign "-" \
+            "build/macos/Build/Products/Release/khmer_lunar_app.app"
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        working-directory: khmer_lunar_app
+        run: |
+          mkdir -p dist/macos
+          create-dmg \
+            --volname "Khmer Lunar Calendar" \
+            --window-size 560 380 \
+            --icon-size 100 \
+            --icon "khmer_lunar_app.app" 140 190 \
+            --hide-extension "khmer_lunar_app.app" \
+            --app-drop-link 420 190 \
+            "dist/macos/KhmerLunarCalendar-1.0.0.dmg" \
+            "build/macos/Build/Products/Release/khmer_lunar_app.app" || \
+          hdiutil create \
+            -volname "Khmer Lunar Calendar" \
+            -srcfolder "build/macos/Build/Products/Release/khmer_lunar_app.app" \
+            -ov -format UDZO \
+            "dist/macos/KhmerLunarCalendar-1.0.0.dmg"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhmerLunarCalendar-macOS
+          path: khmer_lunar_app/dist/macos/KhmerLunarCalendar-1.0.0.dmg
+          retention-days: 30
