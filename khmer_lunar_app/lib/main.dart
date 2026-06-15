@@ -36,7 +36,7 @@ const kSundayBlue = Color(0xFF1565C0);
 const kSilaColor = Color(0xFF6A1B9A);
 
 // ── Khmer labels ─────────────────────────────────────────────────────────────
-const kDayHeaders = ['អាទិ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហ', 'សុក្រ', 'សៅរ៍'];
+const kDayHeaders = ['អាទិ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហ', 'សុក្រ', 'សៅរ៍'];
 const kKhmerMonths = [
   'មករា',
   'កុម្ភៈ',
