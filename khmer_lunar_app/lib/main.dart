@@ -480,9 +480,14 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNational = KhmerHolidays.isNationalHoliday(date);
+    final isOther = KhmerHolidays.isOtherDay(date);
+
     Color numColor;
-    if (isHoliday) {
+    if (isNational) {
       numColor = kHolidayRed;
+    } else if (isOther) {
+      numColor = kGreenMid;
     } else if (isSunday) {
       numColor = kSundayBlue;
     } else if (isSaturday) {
@@ -536,7 +541,11 @@ class _DayCell extends StatelessWidget {
             if (holidayName != null && !hi)
               Text(
                 holidayName!.split('(').first.trim(),
-                style: kStyle(8.5, color: kHolidayRed, height: 1.2),
+                style: kStyle(
+                  8.5,
+                  color: isNational ? kHolidayRed : kGreenMid,
+                  height: 1.2,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -678,14 +687,26 @@ class _RightPanelState extends State<_RightPanel> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.circle, size: 7, color: kHolidayRed),
+                      Icon(
+                        Icons.circle,
+                        size: 7,
+                        color:
+                            KhmerHolidays.isNationalHoliday(widget.selectedDay)
+                            ? kHolidayRed
+                            : kGreenMid,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           holiday,
                           style: kStyle(
                             12,
-                            color: kHolidayRed,
+                            color:
+                                KhmerHolidays.isNationalHoliday(
+                                  widget.selectedDay,
+                                )
+                                ? kHolidayRed
+                                : kGreenMid,
                             weight: FontWeight.w600,
                           ),
                         ),
