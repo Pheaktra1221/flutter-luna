@@ -111,7 +111,7 @@ class _CalendarPageState extends State<CalendarPage> {
         if (wide) {
           return Column(children: [
             const _AppHeader(),
-            Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Row(children: [
               Expanded(flex: 55, child: Column(children: [
                 _MonthNav(
                   year: _month.year, month: _month.month,
@@ -119,10 +119,10 @@ class _CalendarPageState extends State<CalendarPage> {
                   onNext: () => setState(() => _month = DateTime(_month.year, _month.month + 1)),
                 ),
                 const _DayHeaderRow(),
-                Expanded(child: SingleChildScrollView(child: _CalendarGrid(
+                Expanded(child: _CalendarGrid(
                   displayMonth: _month, selectedDay: _selected,
                   onDayTap: (d) => setState(() => _selected = d),
-                ))),
+                )),
               ])),
               VerticalDivider(width: 1, color: Colors.green.shade200),
               Expanded(flex: 45, child: _RightPanel(selectedDay: _selected)),
@@ -345,10 +345,18 @@ class _CalendarGrid extends StatelessWidget {
       );
     }
 
-    return Container(
-      color: const Color(0xFFFFFBF5),
-      child: Column(children: rows),
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      // Distribute available height equally across all rows
+      final rowH = constraints.maxHeight.isFinite && rows.isNotEmpty
+          ? constraints.maxHeight / rows.length
+          : 72.0;
+      return Container(
+        color: const Color(0xFFFFFBF5),
+        child: Column(
+          children: rows.map((r) => SizedBox(height: rowH, child: r)).toList(),
+        ),
+      );
+    });
   }
 }
 
@@ -424,7 +432,7 @@ class _DayCell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
+        // height controlled by parent LayoutBuilder
         decoration: BoxDecoration(
           color: bgColor,
           border: Border.all(color: Colors.green.shade100, width: 0.5),
