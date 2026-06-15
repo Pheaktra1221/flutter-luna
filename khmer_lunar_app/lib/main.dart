@@ -106,86 +106,46 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgCream,
-      body: LayoutBuilder(
-        builder: (ctx, constraints) {
-          final wide = constraints.maxWidth > 820;
-          return Column(
-            children: [
-              const _AppHeader(),
-              Expanded(
-                child: wide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 55, child: _leftPanel()),
-                          VerticalDivider(
-                            width: 1,
-                            color: Colors.green.shade200,
-                          ),
-                          Expanded(flex: 45, child: _rightPanel()),
-                        ],
-                      )
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            _leftPanel(scrollable: false),
-                            _rightPanel(),
-                          ],
-                        ),
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _leftPanel({bool scrollable = true}) {
-    final cal = Column(
-      children: [
-        _MonthNav(
-          year: _month.year,
-          month: _month.month,
-          onPrev: () =>
-              setState(() => _month = DateTime(_month.year, _month.month - 1)),
-          onNext: () =>
-              setState(() => _month = DateTime(_month.year, _month.month + 1)),
-        ),
-        const _DayHeaderRow(),
-        _CalendarGrid(
-          displayMonth: _month,
-          selectedDay: _selected,
-          onDayTap: (d) => setState(() => _selected = d),
-        ),
-      ],
-    );
-    if (!scrollable) return cal;
-    return Column(
-      children: [
-        _MonthNav(
-          year: _month.year,
-          month: _month.month,
-          onPrev: () =>
-              setState(() => _month = DateTime(_month.year, _month.month - 1)),
-          onNext: () =>
-              setState(() => _month = DateTime(_month.year, _month.month + 1)),
-        ),
-        const _DayHeaderRow(),
-        Expanded(
-          child: SingleChildScrollView(
-            child: _CalendarGrid(
-              displayMonth: _month,
-              selectedDay: _selected,
-              onDayTap: (d) => setState(() => _selected = d),
+      body: LayoutBuilder(builder: (ctx, constraints) {
+        final wide = constraints.maxWidth > 820;
+        if (wide) {
+          return Column(children: [
+            const _AppHeader(),
+            Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(flex: 55, child: Column(children: [
+                _MonthNav(
+                  year: _month.year, month: _month.month,
+                  onPrev: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
+                  onNext: () => setState(() => _month = DateTime(_month.year, _month.month + 1)),
+                ),
+                const _DayHeaderRow(),
+                Expanded(child: SingleChildScrollView(child: _CalendarGrid(
+                  displayMonth: _month, selectedDay: _selected,
+                  onDayTap: (d) => setState(() => _selected = d),
+                ))),
+              ])),
+              VerticalDivider(width: 1, color: Colors.green.shade200),
+              Expanded(flex: 45, child: _RightPanel(selectedDay: _selected)),
+            ])),
+          ]);
+        } else {
+          return Column(children: [
+            const _AppHeader(),
+            _MonthNav(
+              year: _month.year, month: _month.month,
+              onPrev: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
+              onNext: () => setState(() => _month = DateTime(_month.year, _month.month + 1)),
             ),
-          ),
-        ),
-      ],
+            const _DayHeaderRow(),
+            Expanded(child: SingleChildScrollView(child: Column(children: [
+              _CalendarGrid(displayMonth: _month, selectedDay: _selected, onDayTap: (d) => setState(() => _selected = d)),
+              _RightPanel(selectedDay: _selected),
+            ]))),
+          ]);
+        }
+      }),
     );
   }
-
-  Widget _rightPanel() => _RightPanel(selectedDay: _selected);
 }
 
 // ── App header ────────────────────────────────────────────────────────────────
@@ -573,13 +533,13 @@ class _RightPanelState extends State<_RightPanel> {
       case FmtMode.banth:
         final pre = _prefixCtrl.text.trim();
         return 'ថ្ងៃ${lunar.dayOfWeek} ${lunar.lunarDay} ខែ${lunar.lunarMonth}'
-            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស. ${lunar.lunarYear}'
+            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស.${lunar.lunarYear}'
             '\n${pre.isNotEmpty ? "$pre " : ""}${lunar.solarDate}';
       case FmtMode.soriya:
         return lunar.solarDate;
       case FmtMode.twoRow:
         return 'ថ្ងៃ${lunar.dayOfWeek} ${lunar.lunarDay} ខែ${lunar.lunarMonth}'
-            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស. ${lunar.lunarYear}'
+            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស.${lunar.lunarYear}'
             '\n${lunar.solarDate}';
       case FmtMode.tak:
         final p = _ctrl.text.trim();
@@ -645,7 +605,7 @@ class _RightPanelState extends State<_RightPanel> {
                       TextSpan(
                         text:
                             'ថ្ងៃ${lunar.dayOfWeek} ${lunar.lunarDay} ខែ${lunar.lunarMonth}'
-                            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស. ${lunar.lunarYear}',
+                            ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស.${lunar.lunarYear}',
                       ),
                     ],
                   ),
