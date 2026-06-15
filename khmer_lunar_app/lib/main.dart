@@ -10,7 +10,6 @@ void main() {
 
 // ── Font ─────────────────────────────────────────────────────────────────────
 const kFont = 'KhmerOSSiemreap';
-
 TextStyle kStyle(
   double size, {
   FontWeight weight = FontWeight.normal,
@@ -32,10 +31,16 @@ const kBgCream = Color(0xFFFAF3EB);
 const kOrange = Color(0xFFB45309);
 const kOrangeBtn = Color(0xFFC2610A);
 const kHolidayRed = Color(0xFFB71C1C);
+const kOtherGreen = Color(0xFF1B5E20);
 const kSundayBlue = Color(0xFF1565C0);
 const kSilaColor = Color(0xFF6A1B9A);
 
-// ── Khmer labels ─────────────────────────────────────────────────────────────
+// Background tints for distinct day types
+const kNationalBg = Color(0xFFFFEBEE); // light red
+const kOtherBg = Color(0xFFE8F5E9); // light green
+const kSilaBg = Color(0xFFF3E5F5); // light purple
+
+// ── Labels ───────────────────────────────────────────────────────────────────
 const kDayHeaders = ['អាទិ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហ', 'សុក្រ', 'សៅរ៍'];
 const kKhmerMonths = [
   'មករា',
@@ -52,7 +57,6 @@ const kKhmerMonths = [
   'ធ្នូ',
 ];
 
-// ── Format modes ──────────────────────────────────────────────────────────────
 enum FmtMode { banth, soriya, twoRow, tak }
 
 const _fmtLabels = {
@@ -63,7 +67,7 @@ const _fmtLabels = {
 };
 const _takSuggestions = ['ផ្អែមស', 'ការិរោល័យ', 'ផ្នោល', 'អនុស្សរៈ'];
 
-// ── Root ──────────────────────────────────────────────────────────────────────
+// ── App ───────────────────────────────────────────────────────────────────────
 class KhmerLunarApp extends StatelessWidget {
   const KhmerLunarApp({super.key});
   @override
@@ -80,7 +84,7 @@ class KhmerLunarApp extends StatelessWidget {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Calendar page ─────────────────────────────────────────────────────────────
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
   @override
@@ -100,146 +104,88 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.of(context).size.width > 820;
     return Scaffold(
       backgroundColor: kBgCream,
-      body: Column(
-        children: [
-          const _AppHeader(),
-          Expanded(
-            child: wide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 55, child: _leftPanel()),
-                      VerticalDivider(width: 1, color: Colors.green.shade200),
-                      Expanded(flex: 45, child: _rightPanel()),
-                    ],
-                  )
-                : SingleChildScrollView(
-                    child: Column(children: [_leftPanel(), _rightPanel()]),
-                  ),
-          ),
-        ],
+      body: LayoutBuilder(
+        builder: (ctx, constraints) {
+          final wide = constraints.maxWidth > 820;
+          return Column(
+            children: [
+              const _AppHeader(),
+              Expanded(
+                child: wide
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 55, child: _leftPanel()),
+                          VerticalDivider(
+                            width: 1,
+                            color: Colors.green.shade200,
+                          ),
+                          Expanded(flex: 45, child: _rightPanel()),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _leftPanel(scrollable: false),
+                            _rightPanel(),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _leftPanel() => Column(
-    children: [
-      _MonthNav(
-        year: _month.year,
-        month: _month.month,
-        onPrev: () =>
-            setState(() => _month = DateTime(_month.year, _month.month - 1)),
-        onNext: () =>
-            setState(() => _month = DateTime(_month.year, _month.month + 1)),
-      ),
-      const _DayHeaderRow(),
-      Expanded(
-        child: SingleChildScrollView(
-          child: _CalendarGrid(
-            displayMonth: _month,
-            selectedDay: _selected,
-            onDayTap: (d) => setState(() => _selected = d),
+  Widget _leftPanel({bool scrollable = true}) {
+    final cal = Column(
+      children: [
+        _MonthNav(
+          year: _month.year,
+          month: _month.month,
+          onPrev: () =>
+              setState(() => _month = DateTime(_month.year, _month.month - 1)),
+          onNext: () =>
+              setState(() => _month = DateTime(_month.year, _month.month + 1)),
+        ),
+        const _DayHeaderRow(),
+        _CalendarGrid(
+          displayMonth: _month,
+          selectedDay: _selected,
+          onDayTap: (d) => setState(() => _selected = d),
+        ),
+      ],
+    );
+    if (!scrollable) return cal;
+    return Column(
+      children: [
+        _MonthNav(
+          year: _month.year,
+          month: _month.month,
+          onPrev: () =>
+              setState(() => _month = DateTime(_month.year, _month.month - 1)),
+          onNext: () =>
+              setState(() => _month = DateTime(_month.year, _month.month + 1)),
+        ),
+        const _DayHeaderRow(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: _CalendarGrid(
+              displayMonth: _month,
+              selectedDay: _selected,
+              onDayTap: (d) => setState(() => _selected = d),
+            ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _rightPanel() => _RightPanel(selectedDay: _selected);
-}
-
-// ── Logo widget (drawn, no image file needed) ─────────────────────────────────
-class _KhmerLogo extends StatelessWidget {
-  final double size;
-  const _KhmerLogo({this.size = 36});
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: Size(size, size), painter: _LogoPainter());
-}
-
-class _LogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final cx = s.width / 2;
-    final cy = s.height / 2;
-    final r = s.width / 2;
-
-    // Outer circle – green
-    canvas.drawCircle(Offset(cx, cy), r, Paint()..color = kGreenMid);
-
-    // Inner crescent moon
-    final moonPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(cx, cy), r * 0.58, moonPaint);
-    canvas.drawCircle(
-      Offset(cx - r * 0.18, cy),
-      r * 0.46,
-      Paint()..color = kGreenMid,
-    );
-
-    // Three stars
-    for (final angle in [-0.6, 0.0, 0.6]) {
-      final sx = cx + r * 0.55 * angle;
-      final sy = cy - r * 0.35;
-      _drawStar(canvas, Offset(sx, sy), r * 0.10, Colors.white);
-    }
-  }
-
-  void _drawStar(Canvas canvas, Offset center, double r, Color color) {
-    final p = Path();
-    for (int i = 0; i < 5; i++) {
-      final outerAngle = (i * 4 * 3.14159265) / 5 - 3.14159265 / 2;
-      final innerAngle = outerAngle + 2 * 3.14159265 / 10;
-      final ox = center.dx + r * 1.0 * _cos(outerAngle);
-      final oy = center.dy + r * 1.0 * _sin(outerAngle);
-      final ix = center.dx + r * 0.45 * _cos(innerAngle);
-      final iy = center.dy + r * 0.45 * _sin(innerAngle);
-      if (i == 0) {
-        p.moveTo(ox, oy);
-      } else {
-        p.lineTo(ox, oy);
-      }
-      p.lineTo(ix, iy);
-    }
-    p.close();
-    canvas.drawPath(p, Paint()..color = color);
-  }
-
-  double _cos(double a) => _trig(a, true);
-  double _sin(double a) => _trig(a, false);
-  double _trig(double a, bool cos) {
-    // Simple inline trig via dart:math would normally be imported,
-    // but we keep imports minimal – use the identity approach
-    // dart:core has no trig; we rely on dart:math implicitly via flutter.
-    if (cos) return _cosImpl(a);
-    return _sinImpl(a);
-  }
-
-  // Use series expansion for simplicity (accurate enough for drawing)
-  double _cosImpl(double x) {
-    x = x % (2 * 3.14159265358979);
-    double result = 1, term = 1;
-    for (int i = 1; i <= 10; i++) {
-      term *= -x * x / ((2 * i - 1) * (2 * i));
-      result += term;
-    }
-    return result;
-  }
-
-  double _sinImpl(double x) {
-    x = x % (2 * 3.14159265358979);
-    double result = x, term = x;
-    for (int i = 1; i <= 10; i++) {
-      term *= -x * x / ((2 * i) * (2 * i + 1));
-      result += term;
-    }
-    return result;
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
 
 // ── App header ────────────────────────────────────────────────────────────────
@@ -256,9 +202,10 @@ class _AppHeader extends StatelessWidget {
         ClipOval(
           child: Image.asset(
             'assets/images/app_icon.png',
-            width: 38,
-            height: 38,
-            errorBuilder: (_, __, ___) => const _KhmerLogo(size: 38),
+            width: 36,
+            height: 36,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.calendar_month, color: Colors.white, size: 36),
           ),
         ),
         const SizedBox(width: 12),
@@ -281,11 +228,10 @@ class _MonthNav extends StatelessWidget {
     required this.onPrev,
     required this.onNext,
   });
-
   @override
   Widget build(BuildContext context) => Container(
     color: kGreenMid,
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -317,11 +263,11 @@ class _DayHeaderRow extends StatelessWidget {
     child: Row(
       children: [
         SizedBox(
-          width: 34,
+          width: 30,
           child: Center(
             child: Text(
               '#',
-              style: kStyle(11, weight: FontWeight.bold, color: Colors.white),
+              style: kStyle(10, weight: FontWeight.bold, color: Colors.white),
             ),
           ),
         ),
@@ -329,12 +275,12 @@ class _DayHeaderRow extends StatelessWidget {
           7,
           (i) => Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 7),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               alignment: Alignment.center,
               child: Text(
                 kDayHeaders[i],
                 style: kStyle(
-                  12,
+                  11,
                   weight: FontWeight.w700,
                   color: (i == 0 || i == 6)
                       ? Colors.red.shade200
@@ -372,7 +318,7 @@ class _CalendarGrid extends StatelessWidget {
       displayMonth.month + 1,
       0,
     ).day;
-    final startOffset = firstDay.weekday % 7; // Sunday = 0
+    final startOffset = firstDay.weekday % 7;
     final today = DateTime.now();
     final rows = <Widget>[];
     int day = 1 - startOffset;
@@ -382,11 +328,11 @@ class _CalendarGrid extends StatelessWidget {
           ? DateTime(displayMonth.year, displayMonth.month, day)
           : firstDay;
       final weekNum = _isoWeek(rowDate);
-      final dayCells = <Widget>[];
+      final cells = <Widget>[];
 
       for (int col = 0; col < 7; col++, day++) {
         if (day < 1 || day > daysInMonth) {
-          dayCells.add(const Expanded(child: SizedBox()));
+          cells.add(const Expanded(child: SizedBox()));
           continue;
         }
         final date = DateTime(displayMonth.year, displayMonth.month, day);
@@ -395,25 +341,20 @@ class _CalendarGrid extends StatelessWidget {
             date.year == today.year &&
             date.month == today.month &&
             date.day == today.day;
-        final isSelected =
+        final isSel =
             date.year == selectedDay.year &&
             date.month == selectedDay.month &&
             date.day == selectedDay.day;
-        final isHoliday = KhmerHolidays.isHoliday(date);
-        final isSunday = date.weekday == DateTime.sunday;
-        final isSaturday = date.weekday == DateTime.saturday;
-
-        dayCells.add(
+        cells.add(
           Expanded(
             child: _DayCell(
               date: date,
               lunarLabel: lunar.lunarDay.toString(),
               holidayName: KhmerHolidays.getHolidayName(date),
               isToday: isToday,
-              isSelected: isSelected,
-              isHoliday: isHoliday,
-              isSunday: isSunday,
-              isSaturday: isSaturday,
+              isSelected: isSel,
+              isSunday: date.weekday == DateTime.sunday,
+              isSaturday: date.weekday == DateTime.saturday,
               isSila: lunar.isSilaDay,
               isFullMoon: lunar.isFullMoon,
               onTap: () => onDayTap(date),
@@ -428,16 +369,16 @@ class _CalendarGrid extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                width: 34,
+                width: 30,
                 color: kGreenDark,
                 alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text(
                   '$weekNum',
-                  style: kStyle(10, color: Colors.white70),
+                  style: kStyle(9, color: Colors.white70),
                 ),
               ),
-              ...dayCells,
+              ...cells,
             ],
           ),
         ),
@@ -456,21 +397,15 @@ class _DayCell extends StatelessWidget {
   final DateTime date;
   final String lunarLabel;
   final String? holidayName;
-  final bool isToday,
-      isSelected,
-      isHoliday,
-      isSunday,
-      isSaturday,
-      isSila,
-      isFullMoon;
+  final bool isToday, isSelected, isSunday, isSaturday, isSila, isFullMoon;
   final VoidCallback onTap;
+
   const _DayCell({
     required this.date,
     required this.lunarLabel,
     required this.holidayName,
     required this.isToday,
     required this.isSelected,
-    required this.isHoliday,
     required this.isSunday,
     required this.isSaturday,
     required this.isSila,
@@ -482,12 +417,16 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNational = KhmerHolidays.isNationalHoliday(date);
     final isOther = KhmerHolidays.isOtherDay(date);
+    final hi = isToday || isSelected;
 
+    // ── Number colour ─────────────────────────────────────────────────────────
     Color numColor;
-    if (isNational) {
+    if (hi) {
+      numColor = Colors.white;
+    } else if (isNational) {
       numColor = kHolidayRed;
     } else if (isOther) {
-      numColor = kGreenMid;
+      numColor = kOtherGreen;
     } else if (isSunday) {
       numColor = kSundayBlue;
     } else if (isSaturday) {
@@ -496,69 +435,92 @@ class _DayCell extends StatelessWidget {
       numColor = Colors.black87;
     }
 
-    final hi = isToday || isSelected;
-    final bgColor = isToday
-        ? kGreenMid
-        : isSelected
-        ? kGreenAccent.withValues(alpha: 0.22)
-        : Colors.transparent;
+    // ── Cell background ───────────────────────────────────────────────────────
+    Color bgColor;
+    if (isToday) {
+      bgColor = kGreenMid;
+    } else if (isSelected) {
+      bgColor = kGreenAccent.withValues(alpha: 0.25);
+    } else if (isNational) {
+      bgColor = kNationalBg;
+    } else if (isOther) {
+      bgColor = kOtherBg;
+    } else if (isSila) {
+      bgColor = kSilaBg;
+    } else {
+      bgColor = Colors.transparent;
+    }
+
+    // ── Left accent bar ───────────────────────────────────────────────────────
+    Color? barColor;
+    if (!hi && isNational) {
+      barColor = kHolidayRed;
+    } else if (!hi && isOther) {
+      barColor = kOtherGreen;
+    } else if (!hi && isSila) {
+      barColor = kSilaColor;
+    }
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 58),
+        constraints: const BoxConstraints(minHeight: 56),
         decoration: BoxDecoration(
           color: bgColor,
           border: Border.all(color: Colors.green.shade100, width: 0.5),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${date.day}',
-                  style: kStyle(
-                    14,
-                    weight: FontWeight.bold,
-                    color: hi ? Colors.white : numColor,
-                  ),
+            // Coloured left bar for holiday types
+            if (barColor != null) Container(width: 3, color: barColor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${date.day}',
+                          style: kStyle(
+                            13,
+                            weight: FontWeight.bold,
+                            color: numColor,
+                          ),
+                        ),
+                        if (isFullMoon)
+                          const Text('🌕', style: TextStyle(fontSize: 8)),
+                      ],
+                    ),
+                    Text(
+                      lunarLabel,
+                      style: kStyle(
+                        9,
+                        color: hi ? Colors.white70 : Colors.brown.shade400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (holidayName != null && !hi)
+                      Text(
+                        holidayName!.split('(').first.trim(),
+                        style: kStyle(
+                          7.5,
+                          color: isNational ? kHolidayRed : kOtherGreen,
+                          height: 1.1,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (isSila && !hi && !isNational && !isOther)
+                      Text('សីល', style: kStyle(7.5, color: kSilaColor)),
+                  ],
                 ),
-                if (isFullMoon) const Text('🌕', style: TextStyle(fontSize: 9)),
-              ],
+              ),
             ),
-            Text(
-              lunarLabel,
-              style: kStyle(
-                9.5,
-                color: hi ? Colors.white70 : Colors.brown.shade400,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (holidayName != null && !hi)
-              Text(
-                holidayName!.split('(').first.trim(),
-                style: kStyle(
-                  8.5,
-                  color: isNational ? kHolidayRed : kGreenMid,
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (isSila && !hi && !isHoliday)
-              Container(
-                margin: const EdgeInsets.only(top: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                decoration: BoxDecoration(
-                  color: kSilaColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Text('សីល', style: kStyle(7.5, color: kSilaColor)),
-              ),
           ],
         ),
       ),
@@ -580,7 +542,6 @@ class _RightPanelState extends State<_RightPanel> {
   final _prefixCtrl = TextEditingController(text: 'ផ្លូវមាស');
   bool _editingPrefix = false;
   String _copyMsg = '';
-
   static const _prefixKey = 'solar_prefix';
 
   @override
@@ -590,16 +551,14 @@ class _RightPanelState extends State<_RightPanel> {
   }
 
   Future<void> _loadPrefix() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_prefixKey);
-    if (saved != null && mounted) {
-      setState(() => _prefixCtrl.text = saved);
-    }
+    final p = await SharedPreferences.getInstance();
+    final s = p.getString(_prefixKey);
+    if (s != null && mounted) setState(() => _prefixCtrl.text = s);
   }
 
-  Future<void> _savePrefix(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefixKey, value);
+  Future<void> _savePrefix(String v) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_prefixKey, v);
   }
 
   @override
@@ -612,11 +571,10 @@ class _RightPanelState extends State<_RightPanel> {
   String _output(KhmerLunarDate lunar) {
     switch (_mode) {
       case FmtMode.banth:
-        // Correct format: ថ្ងៃ{day} {lunarDay} ខែ{month} ឆ្នាំ{zodiac} {era} ព.ស. {year}
-        final prefix = _prefixCtrl.text.trim();
+        final pre = _prefixCtrl.text.trim();
         return 'ថ្ងៃ${lunar.dayOfWeek} ${lunar.lunarDay} ខែ${lunar.lunarMonth}'
             ' ឆ្នាំ${lunar.lunarZodiac} ${lunar.lunarEra} ព.ស. ${lunar.lunarYear}'
-            '\n${prefix.isNotEmpty ? "$prefix " : ""}${lunar.solarDate}';
+            '\n${pre.isNotEmpty ? "$pre " : ""}${lunar.solarDate}';
       case FmtMode.soriya:
         return lunar.solarDate;
       case FmtMode.twoRow:
@@ -646,19 +604,40 @@ class _RightPanelState extends State<_RightPanel> {
   Widget build(BuildContext context) {
     final lunar = Chhankitek.fromDate(widget.selectedDay);
     final holiday = KhmerHolidays.getHolidayName(widget.selectedDay);
+    final isNat = KhmerHolidays.isNationalHoliday(widget.selectedDay);
     final output = _output(lunar);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Summary card ───────────────────────────────────────────────────
+          // ── Legend ──────────────────────────────────────────────────────────
+          _card(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                _legendItem(kHolidayRed, kNationalBg, 'ថ្ងៃឈប់ជាតិ'),
+                _legendItem(kOtherGreen, kOtherBg, 'ថ្ងៃពិសេស'),
+                _legendItem(kSilaColor, kSilaBg, 'ថ្ងៃសីល'),
+                _legendItem(
+                  kGreenMid,
+                  kGreenMid,
+                  'ថ្ងៃនេះ',
+                  textColor: Colors.white,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Summary ──────────────────────────────────────────────────────────
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Correct full Khmer date output matching expected format
                 RichText(
                   text: TextSpan(
                     style: kStyle(14.5, weight: FontWeight.bold, height: 1.7),
@@ -690,10 +669,7 @@ class _RightPanelState extends State<_RightPanel> {
                       Icon(
                         Icons.circle,
                         size: 7,
-                        color:
-                            KhmerHolidays.isNationalHoliday(widget.selectedDay)
-                            ? kHolidayRed
-                            : kGreenMid,
+                        color: isNat ? kHolidayRed : kOtherGreen,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -701,12 +677,7 @@ class _RightPanelState extends State<_RightPanel> {
                           holiday,
                           style: kStyle(
                             12,
-                            color:
-                                KhmerHolidays.isNationalHoliday(
-                                  widget.selectedDay,
-                                )
-                                ? kHolidayRed
-                                : kGreenMid,
+                            color: isNat ? kHolidayRed : kOtherGreen,
                             weight: FontWeight.w600,
                           ),
                         ),
@@ -742,7 +713,7 @@ class _RightPanelState extends State<_RightPanel> {
 
           const SizedBox(height: 12),
 
-          // ── Detail rows ────────────────────────────────────────────────────
+          // ── Detail rows ───────────────────────────────────────────────────────
           _card(
             child: Column(
               children: [
@@ -762,15 +733,13 @@ class _RightPanelState extends State<_RightPanel> {
 
           const SizedBox(height: 12),
 
-          // ── Format section ─────────────────────────────────────────────────
+          // ── Format ────────────────────────────────────────────────────────────
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Format', style: kStyle(12, color: Colors.black45)),
                 const SizedBox(height: 10),
-
-                // Mode chips
                 Wrap(
                   spacing: 8,
                   children: FmtMode.values.map((m) {
@@ -803,7 +772,6 @@ class _RightPanelState extends State<_RightPanel> {
                   }).toList(),
                 ),
 
-                // Custom input for តាក់ mode
                 if (_mode == FmtMode.tak) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -859,8 +827,6 @@ class _RightPanelState extends State<_RightPanel> {
                 ],
 
                 const SizedBox(height: 14),
-
-                // Output box
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -874,10 +840,7 @@ class _RightPanelState extends State<_RightPanel> {
                     style: kStyle(15, color: kOrange, height: 1.8),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                // Buttons: បញ្ចូល | Copy | Cell
                 Row(
                   children: [
                     Expanded(
@@ -945,9 +908,42 @@ class _RightPanelState extends State<_RightPanel> {
     );
   }
 
+  Widget _legendItem(
+    Color color,
+    Color bg,
+    String label, {
+    Color textColor = Colors.black87,
+  }) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withValues(alpha: 0.4)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          color: color,
+          margin: const EdgeInsets.only(right: 5),
+        ),
+        Text(
+          label,
+          style: kStyle(
+            11,
+            color: textColor == Colors.black87 ? color : textColor,
+            weight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+
   Widget _card({required Widget child}) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: Colors.white,
       border: Border.all(color: Colors.green.shade100),
@@ -985,13 +981,12 @@ class _RightPanelState extends State<_RightPanel> {
   );
 }
 
-// ── Editable prefix row (ផ្លូវមាស can be changed and saved) ─────────────────
+// ── Editable prefix row ───────────────────────────────────────────────────────
 class _PrefixRow extends StatelessWidget {
   final TextEditingController controller;
   final bool editing;
   final String solarDate;
   final VoidCallback onEdit, onSave, onChanged;
-
   const _PrefixRow({
     required this.controller,
     required this.editing,
@@ -1032,7 +1027,6 @@ class _PrefixRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          // Save button
           GestureDetector(
             onTap: onSave,
             child: Container(
@@ -1050,8 +1044,6 @@ class _PrefixRow extends StatelessWidget {
         ],
       );
     }
-
-    // Display mode — tap prefix to edit
     return GestureDetector(
       onTap: onEdit,
       child: Row(
